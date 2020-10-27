@@ -15,7 +15,7 @@ library(tidyverse)
 
 week_8 <- trains %>% 
   mutate(att_chg = att_end - att_start) %>% 
-  select(att_chg, gender, party, treatment)
+  select(att_chg, gender, liberal, treatment)
   
 ```
 
@@ -30,12 +30,34 @@ Weeks 7, 8 and 9 are the core of the class. We have a question. We have some dat
 
 * `att_chg` as a function of `gender`
 
+```{r}
+fit_obj <- stan_glm(formula = att_chg ~ gender -1,
+                    data = week_8,
+                    refresh = FALSE)
+```
+
 
 * `att_chg` as a function of `liberal`
+
+```{r}
+fit_obj_2 <- stan_glm(formula = att_chg ~ liberal -1,
+                      data = week_8,
+                      refresh = FALSE)
+
+fit_obj_2
+```
+
 
 
 * `att_chg` as a function of `treatment`
 
+```{r}
+fit_obj_3 <- stan_glm(formula = att_chg ~ treatment -1,
+                      data = week_8,
+                      refresh = FALSE)
+
+fit_obj_3
+```
 
 
 
@@ -44,6 +66,15 @@ Weeks 7, 8 and 9 are the core of the class. We have a question. We have some dat
 
 **Prompt:** For the model with `att_chg` as a function of `treatment`, create posterior probability densities for the two important parameters. Write a paragraph interpreting the meaning of those posteriors. 
 
+```{r}
+fit_obj_3 %>%
+  as_tibble() %>%
+  pivot_longer(cols = treatmentTreated:treatmentControl,
+               names_to = "parameter",
+               values_to = "attitude") %>% 
+  ggplot(aes(x = attitude, color = parameter)) +
+    geom_density()
+```
 
 
 
@@ -51,5 +82,17 @@ Weeks 7, 8 and 9 are the core of the class. We have a question. We have some dat
 
 **Prompt:** Create a plot of the the posterior for the average treatment effect. Write a paragraph interpreting the plot.
 
+```{r}
+fit_obj_3 %>%
+  as_tibble() %>%
+  mutate(difference = treatmentTreated - treatmentControl) %>%
+  ggplot(aes(x = difference)) +
+    geom_histogram(aes(y = after_stat(count / sum(count))),
+                   bins = 30)
+```
 
+The treatment effect for an individual is the difference in their attitude change between
+two potential outcomes (treatment and control). The average treatment effect is the average
+across the population of interest of the individual treatment effects.
 
+This is the posterior probability distribution for the average treatment effect.
